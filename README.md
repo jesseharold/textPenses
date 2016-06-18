@@ -17,10 +17,10 @@ $ is a key that signals the amount of the transaction follows.
 Do not use a $ or "direct" anywhere else in the text message.
 
 Planned features:
-- validate submission for more than one $, no amount
+- validate submission for more than one $, no amount, no $ but readable amount
 - send an email with either a confirmation or error messages
 - make it fun by putting a random gif in the confirmation?
-- record the entire original string in the DB, for troubleshooting
-- add a keyword that triggers a balance report being emailed
-- have this page show the full transaction history and balance
-  information, link to this page in the report email.
+- balance report emailed on request, link to this page in the report email
+- have this page show balance information
+- 
+Current Bugs: only one phone number is triggering the callback, I think it's a setup issue with Nextmo
