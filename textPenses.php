@@ -34,7 +34,7 @@ This application uses Nexmo to update and report on a database
 in order to track shared household expenses. 
 
 Nexmo uses SMS to send data to this page via a GET request.
-The Nexmo number is removed, and the callback to this page
+The Nexmo number is REMOVED, and the callback to this page
 is hard-coded in the settings on my Nexmo dashboard: 
 https://dashboard.nexmo.com/
 
@@ -58,28 +58,30 @@ Planned features:
 
 
 // static variables (keep these private)
-$db_name = "kneesand_kmexpensesTEST";
-$username = "removed";
-$pw = "removed";
+$db_name = "REMOVED";
+$username = "REMOVED";
+$pw = "REMOVED";
 $host = "localhost";
 
 $users = array(
             $harry = array(
             	"name" => "Harry", 
-            	"email" => "removed", 
-            	"phones" => "removed"
+            	"email" => "REMOVED", 
+            	"phones" => "REMOVED"
             ), 
             $victor = array(
             	"name" => "Victor", 
-            	"email" => "removed", 
-            	"phones" => "removed"
+            	"email" => "REMOVED", 
+            	"phones" => "REMOVED"
             ), 
             $victor2 = array(
             	"name" => "Victor", 
-            	"email" => "removed", 
-            	"phones" => "removed"
+            	"email" => "REMOVED", 
+            	"phones" => "REMOVED"
             )                      
         );
+
+
 
 // global variables
 $con; //dbconnection object
@@ -146,8 +148,66 @@ function debugMSG($msg){
  	$log .= $msg . "<br>";
 }//function debugMSG
 
-function sendEmail($msg){
-	//send the user an email to $emailadd
+function sendEmail($address, $msg, $subj){
+	$subjLines = array(
+		"total" => "Here you go! Your requested total for Kid Mansion Expenses",
+		"error" => "Oops! There was a problem recording your expense with Kid Mansion",
+		"success" => "Yay! Your expense was successfully recorded with Kid Mansion"
+		);
+	$moreInfoHTML = '<a href="http://www.kneesandtoes.org/expensesapp/nexmocallback.php">See all recent transactions here</a>.';
+	debugMSG("send an email to " . $address . " that says " . $msg . $moreInfoHTML . " with subject " . $subjLines[$subj]);
+}
+
+function calculateBalance($person){
+	global $con;
+	$otherPerson = "Harry";
+	if($person == "Harry"){
+		$otherPerson = "Victor";
+	}
+	
+	//query the db for all non-direct payments made by person
+	$qurya = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $person . "' AND directpayement=0";
+	$A = getSUM($qurya, $con);
+	debugMSG("Bills paid by you: " . $A);
+	
+	//query the db for all non-direct payments made by other person 
+	$quryb = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $otherPerson . "' AND directpayement=0";
+	$B = getSUM($quryb, $con);
+	debugMSG("Bills paid by other person: " . $B);
+	
+	$bills = $B-$A;
+	
+	//query the db for all direct payments made by person 
+	$quryc = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $person . "' AND directpayement=1";
+	$C = getSUM($quryc, $con);
+	debugMSG("direct payments made by you: " . $C);
+	
+	//query the db for all direct payments made by other person 
+	$quryd = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $otherPerson . "' AND directpayement=1";
+	$D = getSUM($quryd, $con);
+	debugMSG("direct payments made by other person: " . $D);
+	
+	$cashowed = $D-$C;
+	
+	$balance = ($bills/2) + $cashowed;
+	$balMsg = "You are all square.";
+	
+	if ($balance > 0){
+		$balMsg = "You owe " . $otherPerson . " $". $balance;
+	} elseif ($balance < 0 ){
+		$balMsg = $otherPerson . " owes you $". ($balance*-1);
+	}
+	debugMSG($balMsg);
+	return $balMsg;
+}//function calculateBalance
+
+function getSUM($qry, $con){
+	//return an number that is the sum, from a sum() MySQL query
+	$total = 0;
+	$Qobj = mysqli_query($con, $qry) or die(mysqli_error); // result obj of the above query
+	$sumrow = $Qobj->fetch_assoc();
+	$total = $sumrow['value_sum'];
+	return $total;
 }
 
 function parseSMS($request, $sender){
@@ -164,8 +224,8 @@ function parseSMS($request, $sender){
 		//check to see if this is a request for a total
 		if (strpos($origtext, 'total') !== FALSE OR strpos($origtext, 'TOTAL') !== FALSE OR strpos($origtext, 'Total') !== FALSE){
 			// send the user an email with the total
-			debugMSG("Sending " . $sender["email"] . " an email with the total.");
-			sendEmail($sender["email"], "Calculated total");
+			debugMSG("Initiating " . $sender["email"] . " gets their Balance.");
+			sendEmail($sender["email"], calculateBalance($person), "total");
 		} else {
 			debugMSG("There is no amount or keyword in this text.");
 		}
@@ -277,7 +337,7 @@ echo $log;
 ?>
 </div>
 <p>You can also use this web page to test the app, using the query string. Example: <br>
-http://www.kneesandtoes.org/expensesapp/nexmocallback.php?to=2037203&text=$39+for+movies&msisdn=removed</p>
+http://www.kneesandtoes.org/expensesapp/nexmocallback.php?to=2037203&text=$39+for+movies&msisdn=REMOVED</p>
 </div><!--rightcol-->
 </body>
 </html>
