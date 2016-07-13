@@ -34,7 +34,7 @@ This application uses Nexmo to update and report on a database
 in order to track shared household expenses. 
 
 Nexmo uses SMS to send data to this page via a GET request.
-The Nexmo number is REMOVED, and the callback to this page
+The Nexmo number is 12067177264, and the callback to this page
 is hard-coded in the settings on my Nexmo dashboard: 
 https://dashboard.nexmo.com/
 
@@ -47,37 +47,38 @@ Do not use a $ or "direct" anywhere else in the text message.
 
 Planned features:
 - validate submission for more than one $, no $ but a parsable amount
-- send an email with either a confirmation or error messages
 - make it fun by putting a random gif in the confirmation?
-- record the entire original string in the DB, for troubleshooting
-- add a keyword that triggers a balance report being emailed
-- have this page show the full transaction history and balance
-  information, link to this page in the report email.
+- remove "direct" from description
+- able to add negative amount, like if you get a refund or
+   cash in the change jar
 
 ***************************************************************/
 
 
 // static variables (keep these private)
-$db_name = "REMOVED";
-$username = "REMOVED";
-$pw = "REMOVED";
+//$db_name = "kneesand_kmexpensesTEST";
+//testing database
+$db_name = "kneesand_kmexpenses";
+//live database
+$username = "kneesand_jesse";
+$pw = "xxxxxxxx";
 $host = "localhost";
 
 $users = array(
             $harry = array(
             	"name" => "Harry", 
-            	"email" => "REMOVED", 
-            	"phones" => "REMOVED"
+            	"email" => "jesseharold@gmail.com", 
+            	"phones" => "1917xxxxxxxx"
             ), 
             $victor = array(
             	"name" => "Victor", 
-            	"email" => "REMOVED", 
-            	"phones" => "REMOVED"
+            	"email" => "xxx@gmail.com", 
+            	"phones" => "132xxxxxxx"
             ), 
             $victor2 = array(
             	"name" => "Victor", 
-            	"email" => "REMOVED", 
-            	"phones" => "REMOVED"
+            	"email" => "vsxxxxxxxx@gmail.com", 
+            	"phones" => "1646xxxxxxxx"
             )                      
         );
 
@@ -98,7 +99,9 @@ function validateSMS($request, $users){
 	$origtext = "";
 	// check that request is inbound message
 	if(!isset($request['to']) OR !isset($request['msisdn']) OR !isset($request['text'])){
-    		debugMSG('Invalid inbound text message');
+    		debugMSG('No valid inbound text message');
+			 calculateBalance("Harry");
+			return false;
 	} else {
 		debugMSG("This is an inbound message.");
 		
@@ -113,9 +116,8 @@ function validateSMS($request, $users){
 		}
 		if($recognizeNumber === false) {
 			debugMSG ("Could not recognize number: ".$request['msisdn']);
-		} else {
-			return $recognizeNumber;
-		}
+		} 
+		return $recognizeNumber;
 	}
 }//function validateSMS
 
@@ -141,75 +143,6 @@ global $con;
     	}//else
 }//function dbConn
 
-function debugMSG($msg){
-	global $log;
-	//sendEmail($msg);
- 	error_log($msg);
- 	$log .= $msg . "<br>";
-}//function debugMSG
-
-function sendEmail($address, $msg, $subj){
-	$subjLines = array(
-		"total" => "Here you go! Your requested total for Kid Mansion Expenses",
-		"error" => "Oops! There was a problem recording your expense with Kid Mansion",
-		"success" => "Yay! Your expense was successfully recorded with Kid Mansion"
-		);
-	$moreInfoHTML = '<a href="http://www.kneesandtoes.org/expensesapp/nexmocallback.php">See all recent transactions here</a>.';
-	debugMSG("send an email to " . $address . " that says " . $msg . $moreInfoHTML . " with subject " . $subjLines[$subj]);
-}
-
-function calculateBalance($person){
-	global $con;
-	$otherPerson = "Harry";
-	if($person == "Harry"){
-		$otherPerson = "Victor";
-	}
-	
-	//query the db for all non-direct payments made by person
-	$qurya = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $person . "' AND directpayement=0";
-	$A = getSUM($qurya, $con);
-	debugMSG("Bills paid by you: " . $A);
-	
-	//query the db for all non-direct payments made by other person 
-	$quryb = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $otherPerson . "' AND directpayement=0";
-	$B = getSUM($quryb, $con);
-	debugMSG("Bills paid by other person: " . $B);
-	
-	$bills = $B-$A;
-	
-	//query the db for all direct payments made by person 
-	$quryc = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $person . "' AND directpayement=1";
-	$C = getSUM($quryc, $con);
-	debugMSG("direct payments made by you: " . $C);
-	
-	//query the db for all direct payments made by other person 
-	$quryd = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $otherPerson . "' AND directpayement=1";
-	$D = getSUM($quryd, $con);
-	debugMSG("direct payments made by other person: " . $D);
-	
-	$cashowed = $D-$C;
-	
-	$balance = ($bills/2) + $cashowed;
-	$balMsg = "You are all square.";
-	
-	if ($balance > 0){
-		$balMsg = "You owe " . $otherPerson . " $". $balance;
-	} elseif ($balance < 0 ){
-		$balMsg = $otherPerson . " owes you $". ($balance*-1);
-	}
-	debugMSG($balMsg);
-	return $balMsg;
-}//function calculateBalance
-
-function getSUM($qry, $con){
-	//return an number that is the sum, from a sum() MySQL query
-	$total = 0;
-	$Qobj = mysqli_query($con, $qry) or die(mysqli_error); // result obj of the above query
-	$sumrow = $Qobj->fetch_assoc();
-	$total = $sumrow['value_sum'];
-	return $total;
-}
-
 function parseSMS($request, $sender){
 	$directPayment = false;
 	$desc = "";
@@ -224,37 +157,110 @@ function parseSMS($request, $sender){
 		//check to see if this is a request for a total
 		if (strpos($origtext, 'total') !== FALSE OR strpos($origtext, 'TOTAL') !== FALSE OR strpos($origtext, 'Total') !== FALSE){
 			// send the user an email with the total
-			debugMSG("Initiating " . $sender["email"] . " gets their Balance.");
+			//debugMSG("Initiating " . $sender["email"] . " gets their Balance.");
 			sendEmail($sender["email"], calculateBalance($person), "total");
 		} else {
 			debugMSG("There is no amount or keyword in this text.");
 		}
 	} else { //$
-		
 		debugMSG("There is an amount.");
 		$textRA = explode(" ", $origtext);
 		foreach($textRA as $key => $value){
 	        	if($value == 'direct' OR $value == 'Direct' OR $value == 'DIRECT'){
 	        		$directPayment = true;
 	        		debugMSG("This is a direct p2p payment.");
-	        	}
-	        	if (strpos($value, '$') !== FALSE){ // if a word has a dollar sign in it, it's the amount
+	        	} elseif (strpos($value, '$') !== FALSE){ // if a word has a dollar sign in it, it's the amount
 	        		$numval = str_replace("$", "", $value);//remove the dollar sign
 	        		$amount = floatval($numval);//convert this to a float instead of a string
-	        		if ($amount == 0){
+	        		if ($amount <= 0){
 	        			$debugMSG("$ detected, but no valid amount found.");
 	        		}
 	        	} else {
 	        		$desc .= $value . " ";//add words without keys to the description
 	        	}
 	    	}//foreach
-	    	addTheRecord($person, $amount, $directPayment, $desc, $origtext, $pnumber);
+	    	addTheRecord($sender, $amount, $directPayment, $desc, $origtext, $pnumber);
 	 }//$
 } //function parseSMS
 	 
+
+function debugMSG($msg){
+	global $log;
+	//sendEmail($msg);
+ 	error_log($msg);
+ 	$log .= $msg . "<br>";
+}//function debugMSG
+
+function sendEmail($address, $msg, $subj){
+	$subjLines = array(
+		"total" => "Here you go! Your requested total for Kid Mansion Expenses",
+		"error" => "Oops! There was a problem recording your expense with Kid Mansion",
+		"success" => "Yay! Your expense was successfully recorded with Kid Mansion"
+		);
+	$moreInfoHTML = '<p>See all recent transactions here: <br><a href="http://www.kneesandtoes.org/expensesapp/nexmocallback.php">http://www.kneesandtoes.org/expensesapp/nexmocallback.php</a></p>';
 	
-function addTheRecord ($person, $amount, $directPayment, $description, $origtext, $pnumber) {
+	$headers = "MIME-Version: 1.0" . "\r\n";
+	$headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+	$headers .= 'From: Kid Mansion <textPenses@kneesandtoes.org>' . "\r\n";
+	
+	debugMSG("send an email to " . $address . " that says " . $msg . $moreInfoHTML . " with subject " . $subjLines[$subj]);
+	mail($address,$subjLines[$subj], $msg . $moreInfoHTML, $headers);
+}
+
+function calculateBalance($person){
 	global $con;
+	$otherPerson = "Harry";
+	if($person == "Harry"){
+		$otherPerson = "Victor";
+	}
+	
+	//query the db for all non-direct payments made by person
+	$qurya = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $person . "' AND directpayement=0";
+	$A = getSUM($qurya, $con);
+	debugMSG("Bills paid by " . $person . ": " . $A);
+	
+	//query the db for all non-direct payments made by other person 
+	$quryb = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $otherPerson . "' AND directpayement=0";
+	$B = getSUM($quryb, $con);
+	debugMSG("Bills paid by " . $otherPerson . ": " . $B);
+	
+	$bills = $B-$A;
+	
+	//query the db for all direct payments made by person 
+	$quryc = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $person . "' AND directpayement=1";
+	$C = getSUM($quryc, $con);
+	debugMSG("direct payments made by " . $person . ": " . $C);
+	
+	//query the db for all direct payments made by other person 
+	$quryd = "SELECT SUM(`amount`) AS value_sum FROM `expenses` WHERE person='" . $otherPerson . "' AND directpayement=1";
+	$D = getSUM($quryd, $con);
+	debugMSG("direct payments made by " . $otherPerson . ": " . $D);
+	
+	$cashowed = $D-$C;
+	
+	$balance = ($bills/2) + $cashowed;
+	$balMsg = "You are all square.";
+	
+	if ($balance > 0){
+		$balMsg = "<b>" . $person . " owes " . $otherPerson . " $". $balance . "</b>";
+	} elseif ($balance < 0 ){
+		$balMsg = "<b>" . $otherPerson . " owes " . $person . " $". ($balance*-1) . "</b>";
+	}
+	debugMSG($balMsg);
+	return $balMsg;
+}//function calculateBalance
+
+function getSUM($qry, $con){
+	//return an number that is the sum, from a sum() MySQL query
+	$total = 0;
+	$Qobj = mysqli_query($con, $qry) or die(mysqli_error); // result obj of the above query
+	$sumrow = $Qobj->fetch_assoc();
+	$total = $sumrow['value_sum'];
+	return $total;
+}// function getSUM
+function addTheRecord ($sender, $amount, $directPayment, $description, $origtext, $pnumber) {
+	global $con;
+	$person = $sender["name"];
 	$date = date('c'); //current date and time
 	//add a record to the database with the info from the SMS
 	$sql = "INSERT INTO `expenses`(`person`, `amount`, `date`, `directpayement`, `description`, `transID`, `originaltext`) VALUES (" .
@@ -269,21 +275,23 @@ function addTheRecord ($person, $amount, $directPayment, $description, $origtext
     
     	//send to the DB
     	mysqli_query($con, $sql) or die(mysqli_error);
-	debugMSG("Transaction successfully added to the database."); 
+	
+	debugMSG("Transaction successfully added to the database.");
+	$emlCopy = "Your expense of " . $amount . " for " . $description . " was added to the spreadsheet successfully.";
+	sendEmail($sender["email"], $emlCopy, "success");
 
 }//function addTheRecord
 
 
 // begin
-debugMSG("someone sent a text");
+dbConn($host, $db_name, $username, $pw);
 $textSenderID = validateSMS($request, $users);
 if ($textSenderID !== false){
 	debugMSG($textSenderID . " sent a text");
-	if (dbConn($host, $db_name, $username, $pw)){
-		parseSMS($request, $users[$textSenderID]);
-	}
+	parseSMS($request, $users[$textSenderID]);
+} else {
+	//either no text, or number not recognized
 }
-
 ?>
 <div id="container">
 <h1>Textpenses</h1>
@@ -304,8 +312,10 @@ if ($textSenderID !== false){
 </th><th>Description
 </th><th>direct payement? (1/0=y/n)
 </th><th>Date Submitted
+<!--
 </th><th>ID
 </th><th>full text
+-->
 </th>
 </tr>
 <?php
@@ -319,10 +329,10 @@ while ($row = mysqli_fetch_array($resultObj)){
             . $row['amount'] . "</td><td>"
             . $row['description'] . "</td><td>"
             . $row['directpayement'] . "</td><td>"
-            . $row['date'] . "</td><td>"
-            . $row['transID'] . "</td><td>"
-            . $row['originaltext'];
-       $html .= "</td></tr>";
+            . $row['date'] . "</td>";
+           // "<td>" . $row['transID'] . "</td><td>"
+           // . $row['originaltext'] . "</td>";
+       $html .= "</tr>";
     }
     echo $html;
     mysqli_close($con); 
@@ -336,8 +346,7 @@ while ($row = mysqli_fetch_array($resultObj)){
 echo $log;
 ?>
 </div>
-<p>You can also use this web page to test the app, using the query string. Example: <br>
-http://www.kneesandtoes.org/expensesapp/nexmocallback.php?to=2037203&text=$39+for+movies&msisdn=REMOVED</p>
+<p style="display:none;">You can also use this web page to test the app, using the query string. </p>
 </div><!--rightcol-->
 </body>
 </html>
