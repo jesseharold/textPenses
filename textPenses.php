@@ -3,82 +3,37 @@
 <html>
 <head>
     <title>Textpenses</title>
-    <style type="text/css">
-    	.error{color:red;}
-    	.success{color:green;}
-    	h1{margin-top:0;}
-    	div#log {
-	    	display:block;
-	    	overflow:auto;
-	    	border: 1px black solid;
-	    	bgcolor:#aaa;
-    		padding:7px;
-    	}
-    	div#rightcol{
-    		float:right;
-    		padding:7px;
-    		width:35%;
-    	}
-    	div#container{
-    		float:left;
-    		padding:7px;
-    		width:60%;
-    	}
-    </style>
+<link href="textPenses.css"  type="text/css" />
 </head>
 
 <body>
 <?php
-/**************************************************************
-This application uses Nexmo to update and report on a database
-in order to track shared household expenses. 
-
-Nexmo uses SMS to send data to this page via a GET request.
-The Nexmo number is 12067177264, and the callback to this page
-is hard-coded in the settings on my Nexmo dashboard: 
-https://dashboard.nexmo.com/
-
-"direct" is a keyword that signals that the transaction is a 
-direct payment, person to person rather than a paid-for shared
-expense. Direct payments are calculated differently (2x).
-
-$ is a key that signals the amount of the transaction follows.
-Do not use a $ or "direct" anywhere else in the text message.
-
-Planned features:
-- validate submission for more than one $, no $ but a parsable amount
-- make it fun by putting a random gif in the confirmation?
-- remove "direct" from description
-- able to add negative amount, like if you get a refund or
-   cash in the change jar
-
-***************************************************************/
 
 
 // static variables (keep these private)
 //$db_name = "kneesand_kmexpensesTEST";
 //testing database
-$db_name = "kneesand_kmexpenses";
+$db_name = "xxx";
 //live database
-$username = "kneesand_jesse";
-$pw = "xxxxxxxx";
+$username = "xxx";
+$pw = "xxx**hh";
 $host = "localhost";
 
 $users = array(
             $harry = array(
             	"name" => "Harry", 
-            	"email" => "jesseharold@gmail.com", 
-            	"phones" => "1917xxxxxxxx"
+            	"email" => "xxx@gmail.com", 
+            	"phones" => "xxx"
             ), 
             $victor = array(
             	"name" => "Victor", 
             	"email" => "xxx@gmail.com", 
-            	"phones" => "132xxxxxxx"
+            	"phones" => "xxx"
             ), 
             $victor2 = array(
             	"name" => "Victor", 
-            	"email" => "vsxxxxxxxx@gmail.com", 
-            	"phones" => "1646xxxxxxxx"
+            	"email" => "xxx@gmail.com", 
+            	"phones" => "xxx"
             )                      
         );
 
@@ -197,7 +152,7 @@ function sendEmail($address, $msg, $subj){
 		"error" => "Oops! There was a problem recording your expense with Kid Mansion",
 		"success" => "Yay! Your expense was successfully recorded with Kid Mansion"
 		);
-	$moreInfoHTML = '<p>See all recent transactions here: <br><a href="http://www.kneesandtoes.org/expensesapp/nexmocallback.php">http://www.kneesandtoes.org/expensesapp/nexmocallback.php</a></p>';
+	$moreInfoHTML = '<p>See all recent transactions here: <br><a href="http://www.kneesandtoes.org/xxx">http://www.kneesandtoes.org/xxx</a></p>';
 	
 	$headers = "MIME-Version: 1.0" . "\r\n";
 	$headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
@@ -297,7 +252,7 @@ if ($textSenderID !== false){
 <h1>Textpenses</h1>
 <h3>Expense Tracking App that receives SMS messages</h3>
 <div>Jesse Harold, v 0.1</div>
-<p>To add an expense, text the amount with a <b>$</b> and a description to (206) 717 7264. The app will recognize your number if you are an authorized user.</p>
+<p>To add an expense, text the amount with a <b>$</b> and a description to (206) xxx xxxx. The app will recognize your number if you are an authorized user.</p>
 <ul>
 <li>For a direct person-to-person payment, include the word <b>direct</b> in your text.</li>
 <li>To get an email with total owed, text <b>total</b> to the number</li>
