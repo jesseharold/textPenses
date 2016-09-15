@@ -1,0 +1,20 @@
+.error{color:red;}
+.success{color:green;}
+h1{margin-top:0;}
+div#log {
+    display:block;
+    overflow:auto;
+    border: 1px black solid;
+    background-color:#aaa;
+    padding:7px;
+}
+div#rightcol{
+    float:right;
+    padding:7px;
+    width:35%;
+}
+div#container{
+    float:left;
+    padding:7px;
+    width:60%;
+}
